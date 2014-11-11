@@ -5,7 +5,7 @@
 	<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
 	<ProductVersion>10.0.20506</ProductVersion>
 	<SchemaVersion>2.0</SchemaVersion>
-	<ProjectGuid>{75F4A9D4-6312-7BCB-5F2F-9D4C3045521F}</ProjectGuid>
+	<ProjectGuid>{F2E5B8D8-BD66-8130-F17F-FFB8ECC6C50B}</ProjectGuid>
 	<OutputType>Library</OutputType>
 	<AppDesignerFolder>Properties</AppDesignerFolder>
 	<RootNamespace></RootNamespace>
@@ -48,10 +48,11 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\BodySourceManager.cs" />
      <Compile Include="Assets\Scripts\BodySourceView.cs" />
+     <Compile Include="Assets\Scripts\PlayerStuff.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass-vs.csproj">
-      <Project>{A7A82CFB-F2E8-74C6-0578-8316ECEE9004}</Project>      <Name>Assembly-CSharp-firstpass-vs</Name>    </ProjectReference>
+      <Project>{EDC24705-6272-DE9A-3285-85DAE3A3CBA7}</Project>      <Name>Assembly-CSharp-firstpass-vs</Name>    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

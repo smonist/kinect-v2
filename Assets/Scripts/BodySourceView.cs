@@ -8,11 +8,17 @@ public class BodySourceView : MonoBehaviour
 	public GameObject BodySourceManager;
 	public GUIText GUIRightHand;
 	public GUIText GUIDebug;
+	public GUIText GUIDebugTwo;
 	public int frameBufferCount;
+	
+	public Rigidbody sphere;
 	
 	private Dictionary<ulong, GameObject> _Bodies = new Dictionary<ulong, GameObject>();
 	private BodySourceManager _BodyManager;
+	
 	private Queue<Vector3> jointCache = new Queue<Vector3>();
+	//private Queue<Vector3> jointCacheTwo;
+
 	private Vector3 localAcceleration;
 	private Vector3 globalAcceleration;
 
@@ -50,8 +56,14 @@ public class BodySourceView : MonoBehaviour
 
 	void Start ()
 	{
+		/*jointCacheTwo = new Queue<Vector3>();
 		for (int i = 0; i < frameBufferCount; i++) {
-			jointCache.Enqueue(new Vector3(0, 0, 0));
+			jointCacheTwo[i] = new Queue<Vector3>();
+		}*/
+
+
+		for (int i = 0; i < frameBufferCount; i++) {
+			jointCache.Enqueue(Vector3.zero);
 		}
 		globalAcceleration.Set(0, 0, 0);
 		localAcceleration.Set(0, 0, 0);
@@ -59,11 +71,16 @@ public class BodySourceView : MonoBehaviour
 	
 	void Update () 
 	{
+		//reset acceleration
+		globalAcceleration.Set(0, 0, 0);
+		localAcceleration.Set(0, 0, 0);
+
 		if (BodySourceManager == null)
 		{
 			return;
 		}
-		
+
+
 		_BodyManager = BodySourceManager.GetComponent<BodySourceManager>();
 		if (_BodyManager == null)
 		{
@@ -122,6 +139,13 @@ public class BodySourceView : MonoBehaviour
 				RefreshBodyObject(body, _Bodies[body.TrackingId]);
 			}
 		}
+		if (globalAcceleration.x > 0.2 | globalAcceleration.y > 0.2 | globalAcceleration.z > 0.2) {
+			sphere.AddForce (globalAcceleration * 10);
+			GUIDebugTwo.text = (globalAcceleration * 10).ToString();
+		}
+		else {
+			GUIDebugTwo.text = "-";
+		}
 	}
 	
 	private GameObject CreateBodyObject(ulong id)
@@ -162,7 +186,10 @@ public class BodySourceView : MonoBehaviour
 			if (jt == Kinect.JointType.HandRight) {
 				GUIRightHand.text = GetVector3FromJoint(sourceJoint).ToString("#.00");
 
-				localAcceleration = V3Abs((V3Abs(GetVector3FromJoint(sourceJoint))) - V3Abs(jointCache.Peek()));
+
+				//localAcceleration = V3Abs((GetVector3FromJoint(sourceJoint)) - jointCache.Peek());
+				//Demo Mode:
+				localAcceleration = (GetVector3FromJoint(sourceJoint)) - jointCache.Peek();
 				GUIDebug.text = localAcceleration.ToString("#.00");
 
 				if (!V3Equal(localAcceleration, Vector3.zero)) {
