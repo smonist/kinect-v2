@@ -46,9 +46,11 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\BallDemo\PlayerStuff.cs" />
      <Compile Include="Assets\Scripts\BodySourceManager.cs" />
      <Compile Include="Assets\Scripts\BodySourceView.cs" />
-     <Compile Include="Assets\Scripts\PlayerStuff.cs" />
+     <Compile Include="Assets\Scripts\UlrichsBlock\Ulrichs_Block.cs" />
+     <None Include="Assets\jointList.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">

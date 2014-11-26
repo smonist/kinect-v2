@@ -11,16 +11,16 @@ public class BodySourceView : MonoBehaviour
 	public GUIText GUIDebugTwo;
 	public int frameBufferCount;
 	
-	public Rigidbody sphere;
-	
 	private Dictionary<ulong, GameObject> _Bodies = new Dictionary<ulong, GameObject>();
 	private BodySourceManager _BodyManager;
-	
-	private Queue<Vector3> jointCache = new Queue<Vector3>();
-	//private Queue<Vector3> jointCacheTwo;
+
+	Queue<Vector3>[] jointCacheQueues;
+	private int jointCount;
 
 	private Vector3 localAcceleration;
 	private Vector3 globalAcceleration;
+
+	public Vector3 pubAcceleration;
 
 	private Dictionary<Kinect.JointType, Kinect.JointType> _BoneMap = new Dictionary<Kinect.JointType, Kinect.JointType>()
 	{
@@ -56,17 +56,19 @@ public class BodySourceView : MonoBehaviour
 
 	void Start ()
 	{
-		/*jointCacheTwo = new Queue<Vector3>();
-		for (int i = 0; i < frameBufferCount; i++) {
-			jointCacheTwo[i] = new Queue<Vector3>();
-		}*/
+		jointCacheQueues = new Queue<Vector3>[25];
 
+		for (int i = 0; i < 25; i++) {
+			jointCacheQueues[i] = new Queue<Vector3>();
 
-		for (int i = 0; i < frameBufferCount; i++) {
-			jointCache.Enqueue(Vector3.zero);
+			for (int  u = 0; u < frameBufferCount; u++) {
+				jointCacheQueues[i].Enqueue(Vector3.zero);
+			}
 		}
+
 		globalAcceleration.Set(0, 0, 0);
 		localAcceleration.Set(0, 0, 0);
+		pubAcceleration.Set (0, 0, 0);
 	}
 	
 	void Update () 
@@ -139,13 +141,15 @@ public class BodySourceView : MonoBehaviour
 				RefreshBodyObject(body, _Bodies[body.TrackingId]);
 			}
 		}
-		if (globalAcceleration.x > 0.2 | globalAcceleration.y > 0.2 | globalAcceleration.z > 0.2) {
-			sphere.AddForce (globalAcceleration * 10);
-			GUIDebugTwo.text = (globalAcceleration * 10).ToString();
+		/*if (globalAcceleration.x > 0.1 | globalAcceleration.y > 0.1 | globalAcceleration.z > 0.1) {
+				GUIDebugTwo.text = (globalAcceleration * 10).ToString();
 		}
 		else {
 			GUIDebugTwo.text = "-";
-		}
+		}*/
+
+		//set public acceleration
+		//pubAcceleration = globalAcceleration;
 	}
 	
 	private GameObject CreateBodyObject(ulong id)
@@ -171,48 +175,139 @@ public class BodySourceView : MonoBehaviour
 	
 	private void RefreshBodyObject(Kinect.Body body, GameObject bodyObject)
 	{
-		for (Kinect.JointType jt = Kinect.JointType.SpineBase; jt <= Kinect.JointType.ThumbRight; jt++)
+		jointCount = 0;
+		/*for (Kinect.JointType jt = Kinect.JointType.SpineBase; jt <= Kinect.JointType.ThumbRight; jt++)
 		{
 			Kinect.Joint sourceJoint = body.Joints[jt];
 			Kinect.Joint? targetJoint = null;
-
+			
 			if(_BoneMap.ContainsKey(jt))
 			{
 				targetJoint = body.Joints[_BoneMap[jt]];
 			}
-			
-			//Transform jointObj = bodyObject.transform.FindChild(jt.ToString());
-			//jointObj.localPosition = GetVector3FromJoint(sourceJoint);
+
 			if (jt == Kinect.JointType.HandRight) {
-				GUIRightHand.text = GetVector3FromJoint(sourceJoint).ToString("#.00");
+				localAcceleration = (GetVector3FromJoint(sourceJoint)) - jointCacheQueues[jointCount].Peek();
+				jointCacheQueues[jointCount].Dequeue();
+				jointCacheQueues[jointCount].Enqueue(localAcceleration);
 
 
-				//localAcceleration = V3Abs((GetVector3FromJoint(sourceJoint)) - jointCache.Peek());
-				//Demo Mode:
-				localAcceleration = (GetVector3FromJoint(sourceJoint)) - jointCache.Peek();
-				GUIDebug.text = localAcceleration.ToString("#.00");
+				//GUIRightHand.text = GetVector3FromJoint(sourceJoint).ToString("#.00");
+				//GUIRightHand.text = localAcceleration.ToString("#.00");
+				//pubAcceleration = localAcceleration;
+
 
 				if (!V3Equal(localAcceleration, Vector3.zero)) {
 					globalAcceleration += localAcceleration;
 				}
-
-				jointCache.Dequeue();
-				jointCache.Enqueue(GetVector3FromJoint(sourceJoint));
 			}
+
+			//Debug.Log(jointCount + ": " + localAcceleration);
+
+
+			jointCount++;
+		}*/
+		//GUIDebug.text = globalAcceleration.ToString("#.00");
+
+
+		foreach (Kinect.Joint sourceJoint in body.Joints.Values) {
+			//convert joint to vector3
+			Vector3 vectorSourceJoint = GetVector3FromJoint(sourceJoint);
+
+			localAcceleration = vectorSourceJoint - jointCacheQueues[jointCount].Peek();
+			if (!V3Equal(localAcceleration, Vector3.zero)) {
+				globalAcceleration += V3Abs(localAcceleration);
+			}
+
+
+
+
+
+			if (jointCount == 10) {
+				GUIDebugTwo.text = localAcceleration.ToString();
+			}
+
+			jointCacheQueues[jointCount].Dequeue();
+			jointCacheQueues[jointCount].Enqueue(vectorSourceJoint);
+
+			jointCount++;
 		}
+
+		//GUIDebugTwo.text = jointCacheQueues[0].Peek().ToString();
+		GUIDebug.text = globalAcceleration.ToString();
+
+
+
 	}
 
-	private static Vector3 GetVector3FromJoint(Kinect.Joint joint)
+	private Vector3 GetVector3FromJoint(Kinect.Joint joint)
 	{
 		return new Vector3(joint.Position.X * 10, joint.Position.Y * 10, joint.Position.Z * 10);
 	}
 
-	public Vector3 V3Abs(Vector3 input) {
+	private Vector3 V3Abs(Vector3 input) {
 		input.Set(Mathf.Abs(input[0]), Mathf.Abs(input[1]), Mathf.Abs(input[2]));
 		return input;
 	}
 
-	public bool V3Equal(Vector3 a, Vector3 b){
+	private bool V3Equal(Vector3 a, Vector3 b){
 		return Vector3.SqrMagnitude(a - b) < 0.0001;
+	}
+
+	private int jointToNumber(Kinect.JointType inputJoint) {
+		switch (inputJoint) {
+			case Kinect.JointType.SpineBase:
+				return 0;
+			case Kinect.JointType.SpineMid:
+				return 1;
+			case Kinect.JointType.Neck:
+				return 2;
+			case Kinect.JointType.Head:
+				return 3;
+			case Kinect.JointType.ShoulderLeft:
+				return 4;
+			case Kinect.JointType.ElbowLeft:
+				return 5;
+			case Kinect.JointType.WristLeft:
+				return 6;
+			case Kinect.JointType.HandLeft:
+				return 7;
+			case Kinect.JointType.ShoulderRight:
+				return 8;
+			case Kinect.JointType.ElbowRight:
+				return 9;
+			case Kinect.JointType.WristRight:
+				return 10;
+			case Kinect.JointType.HandRight:
+				return 11;
+			case Kinect.JointType.HipLeft:
+				return 12;
+			case Kinect.JointType.KneeLeft:
+				return 13;
+			case Kinect.JointType.AnkleLeft:
+				return 14;
+			case Kinect.JointType.FootLeft:
+				return 15;
+			case Kinect.JointType.HipRight:
+				return 16;
+			case Kinect.JointType.KneeRight:
+				return 17;
+			case Kinect.JointType.AnkleRight:
+				return 18;
+			case Kinect.JointType.FootRight:
+				return 19;
+			case Kinect.JointType.SpineShoulder:
+				return 20;
+			case Kinect.JointType.HandTipLeft:
+				return 21;
+			case Kinect.JointType.ThumbLeft:
+				return 22;
+			case Kinect.JointType.HandTipRight:
+				return 23;
+			case Kinect.JointType.ThumbRight:
+				return 24;
+			default:
+				return 100;
+		}
 	}
 }
